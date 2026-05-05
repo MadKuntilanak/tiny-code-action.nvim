@@ -3,7 +3,10 @@ local BasePicker = require("tiny-code-action.base.picker")
 local M = BasePicker.new()
 
 local function format_code_action(item)
-  local formatted = M.format_code_action(item)
+  local formatted = M.format_code_action({
+    action = item.action,
+    client = vim.lsp.get_client_by_id(item.client_id),
+  })
 
   return {
     { formatted.kind, formatted.kind_hl },
@@ -32,7 +35,7 @@ function M.create(config, results, bufnr)
 
     table.insert(items, {
       action = pair_client_action.action,
-      client = pair_client_action.client,
+      client_id = pair_client_action.client.id,
       context = pair_client_action.context,
       text = pair_client_action.action.title,
     })
@@ -65,7 +68,12 @@ function M.create(config, results, bufnr)
         return
       end
 
-      M.apply_action(item.action, item.client, item.context, bufnr)
+      local client = vim.lsp.get_client_by_id(item.client_id)
+      if not client then
+        return
+      end
+
+      M.apply_action(item.action, client, item.context, bufnr)
     end,
     win = {
       input = {
@@ -87,7 +95,7 @@ function M.create(config, results, bufnr)
   }
 
   if type(config.picker) == "table" then
-    picker_opts = vim.tbl_deep_extend("force", config.picker.opts or {}, picker_opts)
+    picker_opts = vim.tbl_deep_extend("force", picker_opts, config.picker.opts or {})
   end
 
   local picker = snacks.pick(picker_opts)

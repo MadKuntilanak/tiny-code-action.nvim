@@ -36,19 +36,26 @@ local function preview_cmd(opts)
   function CodeActionPreviewerCmd:cmdline(o)
     o = o or {}
     return shell.stringify_cmd(function(entry_str)
-      local text
       if type(entry_str) ~= "table" then
-        text = "No preview available for this action"
-      else
-        local preview_content = extract_preview_data(entry_str[1], opts)
-        text = table.concat(preview_content, "\n")
+        local fallback_cmd = utils.create_echo_command("No preview available for this action")
+
+        if type(fallback_cmd) == "table" then
+          return table.concat(fallback_cmd, " ")
+        end
       end
 
+      local preview_content = extract_preview_data(entry_str[1], opts)
+      local text = table.concat(preview_content, "\n")
+
       local cmd = utils.create_echo_command(text .. "\n")
+
       for i = 1, #cmd do
         cmd[i] = vim.fn.shellescape(cmd[i])
       end
-      return table.concat(cmd, " ")
+
+      if type(cmd) == "table" then
+        return table.concat(cmd, " ")
+      end
     end, {}, "{}")
   end
 

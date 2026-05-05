@@ -20,7 +20,7 @@ function M.term_previewer(opts)
     end
 
     local action = ctx.item.action
-    local client = ctx.item.client
+    local client = ctx.item.client or vim.lsp.get_client_by_id(ctx.item.client_id)
 
     local preview_content = M.preview_with_resolve(action, opts.bufnr, client, ctx.item)
     if not preview_content or vim.tbl_isempty(preview_content) then
@@ -43,6 +43,15 @@ function M.term_previewer(opts)
       -- Use terminal preview for other content types
       local text = table.concat(preview_content, "\n")
       snacks_preview.cmd(utils.create_echo_command(text), ctx)
+
+      vim.api.nvim_create_autocmd("TermClose", {
+        group = vim.api.nvim_create_augroup("tiny-code-action-exitmsg", { clear = true }),
+        buffer = ctx.buf,
+        once = true,
+        callback = function(ev)
+          terminal.hide_exit_message(ev.buf)
+        end,
+      })
     end
 
     return true
